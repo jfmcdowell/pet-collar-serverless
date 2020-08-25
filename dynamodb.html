@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <!-- Required meta tags -->
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css" integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh" crossorigin="anonymous">
+
+    <title>Octank Pet Finder</title>
+
+    <script src="https://sdk.amazonaws.com/js/aws-sdk-2.610.0.min.js"></script>
+    <script>
+    var myMap;
+    var lastMarker;
+
+    AWS.config.update({
+      region: "us-east-1",
+
+      // This is the access key ID & Secret Access Key for a user that has permission to assume the front-end role.
+      // Implemented by creating an IAM user with Read only Dynamo privileges and creating a role with the same
+      // privileges
+
+      accessKeyId: "INSERT VALUES",
+      secretAccessKey: "INSERT VALUES"
+    });
+
+    function queryData() {
+
+        // Assume the front-end role, which has access to DynamoDB.
+        var sts = new AWS.STS();
+        var params = {
+            RoleArn: "INSERT VALUES", //Like arn:aws:iam::111111111111:role/pet-collar-gps-frontend
+            RoleSessionName: "INSERT VALES" //Like pet-gps-collar-frontend
+        };
+
+         sts.assumeRole(params, function (err, data) {
+          if (err) console.log(err, err.stack); // an error occurred
+          else {
+            // Use the front-end role's credentials to query DynamoDB.
+            var credentials = new AWS.Credentials(
+                data.Credentials.AccessKeyId,
+                data.Credentials.SecretAccessKey,
+                data.Credentials.SessionToken);
+
+            var docClient = new AWS.DynamoDB({credentials: credentials});
+            var params = {
+                TableName : "PetGpsLocations",
+                KeyConditionExpression: "PetId = :petId",
+                ExpressionAttributeValues: {
+                    ":petId": { "S": "Rover" }
+                },
+                Limit: 1,
+                ScanIndexForward: false
+            };
+
+            docClient.query(params, function(err, data) {
+                if (err) {
+                    console.log(err, err.stack);
+                }
+                else {
+                    document.getElementById("dynamo-db-response").innerHTML = JSON.stringify(data, null, "  ");
+                    for (var item of data.Items) {
+                        console.log(item.Latitude.S);
+                        console.log(item.Longitude.S);
+
+                        if (!myMap) {
+                        	myMap = L.map('mapid').setView([item.Latitude.S, item.Longitude.S], 19);
+                        	L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {attribution: 'Map data &copy; <a href="https://www.openstreetmap.org/">OpenStreetMap</a> contributors, <a href="https://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>'}).addTo(myMap);
+                        }
+
+                        if (lastMarker)
+                            lastMarker.remove();
+
+                        myMap.setView([item.Latitude.S, item.Longitude.S], 19);
+                        lastMarker = L.marker([item.Latitude.S, item.Longitude.S]).addTo(myMap);
+                    }
+                }
+            });
+          }
+        });
+    }
+    </script>
+
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.6.0/dist/leaflet.css"
+            integrity="sha512-xwE/Az9zrjBIphAcBb3F6JVqxf46+CDLwfLMHloNu6KEQCAWi6HcDUbeOfBIptF7tcCzusKFjFw2yuvEpDL9wQ=="
+            crossorigin=""/>
+
+    <!-- Make sure you put this AFTER Leaflet's CSS -->
+    <script src="https://unpkg.com/leaflet@1.6.0/dist/leaflet.js"
+       integrity="sha512-gZwIG9x3wUXg2hdXF6+rVkLF/0Vi9U8D2Ntg4Ga5I5BZpVkVxlJWbSQtXPSiUTtC0TjtGOmxa1AJPuV0CPthew=="
+       crossorigin=""></script>
+
+  </head>
+  <body>
+    <h1>Octank Pet Finder</h1>
+
+    <script>queryData()</script>
+<div id="mapid" style="width: 600px; height: 400px;"></div>
+<script>
+    setInterval('queryData()', 3000);
+</script>
+
+    <pre style="display:none"><code id="dynamo-db-response"></code></pre>
+
+    <!-- Optional JavaScript -->
+    <!-- jQuery first, then Popper.js, then Bootstrap JS -->
+    <script src="https://code.jquery.com/jquery-3.4.1.slim.min.js" integrity="sha384-J6qa4849blE2+poT4WnyKhv5vZF5SrPo0iEjwBvKU7imGFAV0wwj1yYfoRSJoZ+n" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js" integrity="sha384-Q6E9RHvbIyZFJoft+2mJbHaEWldlvI9IOYy5n3zV9zzTtmI3UksdQRVvoxMfooAo" crossorigin="anonymous"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/js/bootstrap.min.js" integrity="sha384-wfSDF2E50Y2D1uUdj0O3uMBJnjuUD4Ih7YwaYd1iqfktj0Uod8GCExl3Og8ifwB6" crossorigin="anonymous"></script>
+
+  </body>
+</html>
