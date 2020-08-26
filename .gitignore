@@ -37,7 +37,7 @@ MANIFEST
 # Editor
 # VS Code Settings
 .vscode/
-petcollargps.code-workspace
+pet-collar-serverless.code-workspace
 
 # PyInstaller
 #  Usually these files are written by a python script from a template
@@ -143,4 +143,3 @@ dmypy.json
 # pytype static type analyzer
 .pytype/
 pet_collar_gps/__init__.py
-
